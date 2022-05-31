@@ -1,0 +1,18 @@
+<idea-plugin>
+  <id>at.wtioit.intellij.plugins.testing_plugin_tests</id>
+  <name>Testing plugin tests</name>
+  <vendor email="admin.jetbrains-plugins@service.wt-io-it.at" url="http://www.wt-io-it.at">WT-IO-IT</vendor>
+
+  <description><![CDATA[
+      <p>This plugin just tests if the tests are working</p>
+  ]]></description>
+  <change-notes><![CDATA[
+      No changes yet
+    ]]>
+  </change-notes>
+
+  <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+       on how to target different products -->
+  <depends config-file="at_wtioit_intellij_plugins_test_plugin_tests.xml">com.intellij.modules.python</depends>
+
+</idea-plugin>

@@ -1,0 +1,84 @@
+import java.util.stream.Collectors
+
+plugins {
+    id("java")
+    // get the newest version from https://github.com/JetBrains/intellij-platform-plugin-template/blob/main/build.gradle.kts
+    // it seems the template is no longer updated: https://youtrack.jetbrains.com/issue/IDEA-291468
+    id("org.jetbrains.intellij") version "1.6.0"
+    // Gradle Changelog Plugin
+    id("org.jetbrains.changelog") version "1.3.1"
+    // Gradle Qodana Plugin
+    id("org.jetbrains.qodana") version "0.1.13"
+}
+
+group = project.findProperty("pluginGroup")
+version = project.findProperty("pluginVersion")
+
+def intellijVersion = System.getenv("AT_WTIOIT_PYCHARM_PLUGIN_testVersion") ?: project.findProperty("platformVersion")
+def intellijType = System.getenv("AT_WTIOIT_PYCHARM_PLUGIN_testType") ?: project.findProperty("platformType")
+def intellijPlugins = Arrays.stream(project.findProperty("platformPlugins").split(',')).map(String::trim).filter((s) -> s.length() > 0).collect(Collectors.toList())
+def buildDownloadSources = project.findProperty("platformDownloadSources").toBoolean()
+
+def intellijMinorVersion = intellijVersion.substring(0, 6)
+if (intellijVersion != '2019.2' && intellijType == 'PC') {
+    // only PyCharm 2019.2 seems to provide com.jetbrains.python.psi itself
+    intellijPlugins.add('PythonCore')
+    // see https://plugins.jetbrains.com/plugin/7322-python-community-edition/versions
+} else if (intellijVersion != '2019.2' && intellijType == 'PY') {
+    // PyCharm Professional uses another python plugin
+    intellijPlugins.add('Pythonid')
+    // see https://plugins.jetbrains.com/plugin/631-python/versions
+}
+if (intellijType == 'PY' || intellijMinorVersion in ['2019.2', '2019.3','2020.1', '2020.2', '2020.3', '2021.1']) {
+    // we can get no sources for pycharm professional
+    // or versions where the source code does not reside in ivy
+    // (2021 JCenter shut down and it seems that JetBrains did not publish/migrate older sources to ivy)
+    buildDownloadSources = false
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation("junit:junit:4.13.2")
+}
+
+// See https://github.com/JetBrains/gradle-intellij-plugin/
+intellij {
+    pluginName.set(project.findProperty("pluginName"))
+    version.set(intellijVersion)
+    type.set(intellijType)
+    downloadSources.set(buildDownloadSources)
+    plugins.set(intellijPlugins)
+    // this needs to be false to be able to leave out the until-build in plugin.xml
+    updateSinceUntilBuild.set(false)
+}
+
+// workaround for tests not being found in 2021.3+
+// see https://youtrack.jetbrains.com/issue/IDEA-278926#focus=Comments-27-5561012.0-0
+allprojects {
+    test {
+        scanForTestClasses false
+        include "**/*Test.class"
+        include "**/Test*.class"
+    }
+}
+
+tasks {
+    // for compatibility with 2019.x
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    wrapper {
+        gradleVersion = project.findProperty("gradleVersion")
+    }
+
+    patchPluginXml {
+        version.set(project.findProperty("pluginVersion"))
+        // please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description
+        sinceBuild.set(project.findProperty("pluginSinceBuild"))
+        // we do not use untilBuild
+    }
+
+}
